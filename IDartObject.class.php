@@ -18,6 +18,8 @@ class IDartObject {
 	}
 
 	public function toResponse() {
+		if(!self::isValidSpecification() || !this->isValid()) return NULL;
+
 		$response = new DartResponse();
 		$response->dartObjectType = get_called_class();
 		if(!$this->setDartVariables($response)) {
@@ -62,7 +64,6 @@ class IDartObject {
 
 	public function setDartVariables(&$response) {
 		if(get_class($response) != 'DartResponse') return false;
-		if(!$this->isValid()) return false;
 
 		$allVars = array_merge(self::getRequiredVariables(), self::getOptionalVariables());
 
