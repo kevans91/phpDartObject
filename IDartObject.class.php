@@ -3,7 +3,7 @@
 require_once('DartResponse.class.php');
 
 class IDartObject {
-	static $__validPrimitiveTypes = array('string',
+	static $__explicitValidTypes = array('string',
 					'integer',
 					'boolean',
 					'double',
@@ -20,7 +20,7 @@ class IDartObject {
 	public function toResponse() {
 		if(!self::isValidSpecification()) {
 			trigger_error('Type ' . get_called_class() . ' is not a valid IDartObject specification', E_USER_ERROR);
-		} else if(!this->isValid()) {
+		} else if(!$this->isValid()) {
 			trigger_error('Instance of type ' . get_called_class() . ' is not valid', E_USER_ERROR);
 		}
 
@@ -151,7 +151,7 @@ class IDartObject {
 
 		if(!empty($optionalVars)) return $optionalVars;
 
-		$vars = array_keys(get_class_vars(get_called_class()));
+		$vars = get_class_vars(get_called_class());
 	
 		$optionalVars = array();
 		foreach($vars as $k => $v) {
