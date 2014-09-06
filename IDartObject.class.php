@@ -7,7 +7,8 @@ class IDartObject {
 					'integer',
 					'boolean',
 					'double',
-					'array');
+					'array',
+					'NULL');
 
 	public function IDartObject() {
 		$vars = get_object_vars($this);
