@@ -18,7 +18,11 @@ class IDartObject {
 	}
 
 	public function toResponse() {
-		if(!self::isValidSpecification() || !this->isValid()) return NULL;
+		if(!self::isValidSpecification()) {
+			trigger_error('Type ' . get_called_class() . ' is not a valid IDartObject specification', E_USER_ERROR);
+		} else if(!this->isValid()) {
+			trigger_error('Instance of type ' . get_called_class() . ' is not valid', E_USER_ERROR);
+		}
 
 		$response = new DartResponse();
 		$response->dartObjectType = get_called_class();
