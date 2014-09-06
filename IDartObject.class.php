@@ -33,17 +33,34 @@ class IDartObject {
 		return $response;
 	}
 
+	private function _dartobj_hasExplicitValidType($val) {
+		$type = gettype($val);
+
+		return in_array($type, IDartObject::$__explicitValidTypes);
+	}
+
+	private function _dartobj_hasType($val, $type) {
+		return (gettype($val) === $type || $this->_dartobj_isValidDartObjType($val, $type));
+	}
+
+	private function _dartobj_isValidDartObjType($val, $type) {
+		return (is_subclass_of($type, 'IDartObject') && (is_null($val) || get_class($val) == $type));
+	}
+
 	private function _dartobj_parseArray(&$arr) {
 		foreach($arr as $k => $v) {
 			if(is_array($v)) {
 				$this->_dartobj_parseArray($arr[$k]);
 			} else if(is_subclass_of($v, 'IDartObject')) {
 				$arr[$k] = $v->toResponse();
+			} else if(!$this->_dartobj_hasExplicitValidType($v)) {
+				trigger_error('Instance of type ' . get_called_class() . ' has not explicitly allowed object in an array', E_USER_ERROR); 
 			}
 		}
 	}
 
 	private function _dartobj_setVars(&$response, $varList) {
+		if(empty($varList)) return;
 		if(is_string(array_keys($varList)[0])) $varList = array_keys($varList);
 
 		foreach($varList as $var) {
@@ -51,7 +68,7 @@ class IDartObject {
 			$val =& $this->$var;
 
 			if(empty($val)) {
-				$this->$var = $val;
+				$response->$var = $val;
 			} else if(is_subclass_of($val, 'IDartObject')) {
 					// Convert this to a response object.
 				$response->$var = $val->toResponse();
@@ -61,7 +78,7 @@ class IDartObject {
 				
 				$this->_dartobj_parseArray($response->$var);
 			} else {
-				$this->$var = $val;
+				$response->$var = $val;
 			}
 		}
 	}
@@ -80,17 +97,18 @@ class IDartObject {
 		$vars = get_object_vars($this);
 		$requiredVars = self::getRequiredVariables();
 		$optionalVars = self::getOptionalVariables();
-
 		foreach($requiredVars as $k => $type) {
-			if(!isset($this->$k) || gettype($this->$k) !== $type) {
+			if(!isset($this->$k)) {
+				return false;
+			} else if(!$this->_dartobj_hasType($this->$k, $type)) {
 				return false;
 			}
 		}
 
 		foreach($optionalVars as $k => $type) {
-			if(isset($this->$k) && gettype($this->$k) !== $type) {
+			if(isset($this->$k) && !$this->_dartobj_hasType($this->$k, $type)) {
 				return false;
-			}
+			}	
 		}
 
 		return true;
@@ -126,16 +144,18 @@ class IDartObject {
 	}
 
 	public static function getRequiredVariables() {
-		static $requiredVars;
+		static $allRequiredVars;
 
-		if(!empty($requiredVars)) return $requiredVars;
+		$myClass = get_called_class();	
 
-		$vars = get_class_vars(get_called_class());
+		if(!empty($allRequiredVars[$myClass])) return $allRequiredVars[$myClass];
+
+		$vars = get_class_vars($myClass);
 
 		$requiredVars = array();
 		foreach($vars as $k => $v) {
 			if(empty($v)) {
-				trigger_error('Invalid IDartObject specification: ' . get_called_class() . '::' . $k . ' is missing a type specification', E_USER_ERROR);
+				trigger_error('Invalid IDartObject specification: ' . $myClass . '::' . $k . ' is missing a type specification', E_USER_ERROR);
 			}
 
 			if($k[0] !== '_') {
@@ -143,26 +163,32 @@ class IDartObject {
 			}
 		}
 
+		$allRequiredVars[$myClass] = $requiredVars;
+
 		return $requiredVars;
 	}
 
 	public static function getOptionalVariables() {
-		static $optionalVars;
+		static $allOptionalVars;
 
-		if(!empty($optionalVars)) return $optionalVars;
+		$myClass = get_called_class();
 
-		$vars = get_class_vars(get_called_class());
+		if(!empty($allOptionalVars[$myClass])) return $allOptionalVars[$myClass];
+
+		$vars = get_class_vars($myClass);
 	
 		$optionalVars = array();
 		foreach($vars as $k => $v) {
 			if(empty($v)) {
-				trigger_error('Invalid IDartObject specification: ' . get_called_class() . '::' . $k . ' is missing a type specification', E_USER_ERROR);
+				trigger_error('Invalid IDartObject specification: ' . $myClass . '::' . $k . ' is missing a type specification', E_USER_ERROR);
 			}
 
 			if($k[0] === '_' && $k[1] !== '_') {
 				$optionalVars[$k] = $v;
 			}
 		}
+
+		$allOptionalVars[$myClass] = $optionalVars; 
 
 		return $optionalVars;
 	}
