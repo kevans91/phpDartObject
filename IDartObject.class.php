@@ -34,6 +34,10 @@ class IDartObject {
 		return $response;
 	}
 
+	public function toString() {
+		return $this->toResponse()->toString();
+	}
+
 	private function _dartobj_hasExplicitValidType($val) {
 		$type = gettype($val);
 
