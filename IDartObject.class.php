@@ -185,7 +185,7 @@ class IDartObject {
 			}
 
 			if($k[0] === '_' && $k[1] !== '_') {
-				$optionalVars[$k] = $v;
+				$optionalVars[substr($k, 1)] = $v;
 			}
 		}
 
