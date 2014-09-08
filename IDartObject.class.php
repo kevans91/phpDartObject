@@ -1,5 +1,6 @@
 <?php
 require_once('DartResponse.class.php');
+require_once('DartRequest.class.php');
 
 class IDartObject {
 	static $__explicitValidTypes	= array('string',
@@ -40,14 +41,14 @@ class IDartObject {
 		return $this->toResponse()->toString();
 	}
 	
-	public function fromResponse($response) {
+	public function fromRequest($request) {
 		if(!self::isValidSpecification()) {
 			trigger_error('Type ' . get_called_class() . ' is not a valid IDartObject specification', E_USER_ERROR);
-		} else if(get_class($response) != 'DartResponse') {
-			trigger_error('Response generating ' . get_called_class() . ' is not a DartResponse', E_USER_ERROR);
+		} else if(get_class($request) != 'DartRequest') {
+			trigger_error('Request generating ' . get_called_class() . ' is not a DartRequest', E_USER_ERROR);
 		}
 
-		$this->_dartobj_getDartVariables($response);
+		$this->_dartobj_getDartVariables($request);
 
 		if(!$this->isValid()) {
 			return false;
@@ -74,14 +75,14 @@ class IDartObject {
 		return (is_subclass_of($type, 'IDartObject') && (is_null($val) || get_class($val) == $type));
 	}
 
-	private function _dartobj_parseArray(&$arr, $isResponse = FALSE) {
+	private function _dartobj_parseArray(&$arr, $isRequest = FALSE) {
 		foreach($arr as $k => $v) {
 			if(is_array($v)) {
-				$this->_dartobj_parseArray($arr[$k], $isResponse);
+				$this->_dartobj_parseArray($arr[$k], $isRequest);
 				continue;
 			}
 			
-			if(!$isResponse) {
+			if(!$isRequest) {
 					// Not a response
 				if(is_subclass_of($v, 'IDartObject')) {
 					$arr[$k] = $v->toResponse();
@@ -92,7 +93,7 @@ class IDartObject {
 					// Response
 				if(is_object($v) && isset($v->dartObjectType)) {
 					$arr[$k] = new $v->dartObjectType();
-					$arr[$k]->fromResponse($v);
+					$arr[$k]->fromRequest($v);
 				} else if(!$this->_dartobj_hasExplicitValidType($v)) {
 					trigger_error('Instance of type ' . get_called_class() . ' has not explicitly allowed object in an array', E_USER_ERROR);
 				}
@@ -100,23 +101,23 @@ class IDartObject {
 		}
 	}
 
-	private function _dartobj_getVars($response, $varList) {
-		if(empty($varList) || empty($response)) return;
+	private function _dartobj_getVars($request, $varList) {
+		if(empty($varList) || empty($request)) return;
 		if(is_string(array_keys($varList)[0])) $varList = array_keys($varList);
 
 		foreach($varList as $var) {
-			if(!isset($response->$var)) continue;
+			if(!isset($request->$var)) continue;
 		
-			$val =& $response->$var;
+			$val =& $request->$var;
 
 			if(empty($val)) {
 				$this->$var = $val;
-			} else if(isset($val->dartObjectType)) {
+			} else if(is_object($val) && isset($val->dartObjectType)) {
 					// Covnert this back into an IDartObject
 				$this->$var = new $val->dartObjectType();
-				$this->$var->fromResponse($val);
+				$this->$var->fromRequest($val);
 			} else if(is_array($val)) {
-					// Convert any response elments to the proper object type
+					// Convert any request elments to the proper object type
 				$this->$var = $val;
 
 				$this->_dartobj_parseArray($this->$var, TRUE);
@@ -160,18 +161,18 @@ class IDartObject {
 		return true;
 	}
 
-	private function _dartobj_getDartVariables($response) {
-		if(get_class($response) != 'DartResponse') return false;
+	private function _dartobj_getDartVariables($request) {
+		if(get_class($request) != 'DartRequest') return false;
 
-		$vars = get_object_vars($response);
+		$vars = get_object_vars($request);
 
 		$allVars = array_merge(self::getRequiredVariables(), self::getOptionalVariables());
 
-		$this->_dartobj_getVars($response, $allVars);
+		$this->_dartobj_getVars($request, $allVars);
 	}
 
-	public static function isValidResponse($response) {
-		$vars = get_object_vars($response);
+	public static function isValidRequest($request) {
+		$vars = get_object_vars($request);
 
 		$requiredVars = self::getRequiredVariables();
 		$optionalVars = self::getOptionalVariables();
