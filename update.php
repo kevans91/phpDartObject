@@ -33,17 +33,3 @@ if(isset($_POST['dartObject'])) {
 	}
 }
 
-$test = new TestObject();
-$test->test1 = array('test');
-$test->test2 = 5;
-$test->test3 = (double)5;
-$test->test4 = 'test item';
-$test->test5 = true;
-
-$dartObject = $test->toString();
-
-$validObject = new validDartObj();
-$dartObject = $validObject->toString();
-
-
-//echo json_encode($obj);
