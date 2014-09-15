@@ -3,31 +3,35 @@
 header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json');
 
+require_once('common.php');
+
 require_once('lib/IDartObject.class.php');
 require_once('lib/DartResponse.class.php');
 require_once('lib/DartRequest.class.php');
 
 require_once('example/objects.php');
 
-function testObjectHandler($object) {
-	var_dump(__FUNCTION__);
-	var_dump($object);
-	return true;
-}
+$handlerType = 'Update';
+$handlers = getHandlers($handlerType);
 
-function moreTestObjectHandler($object) {
-	var_dump(__FUNCTION__);
-	var_dump($object);
-}
+if(isset($_POST['dartObject'])) {
+	$dartObjects = $_POST['dartObject'];
+	if(!is_array($dartObjects)) $dartObjects = array($dartObjects);
 
-function validObjectHandler($object) {
-	var_dump(__FUNCTION__);
-	var_dump($object);
+	foreach($dartObjects as $obj) {
+		$req = new DartRequest($obj);
+		$phpDartObject = $req->toObject();
+		$type = $req->dartObjectType;
+		if(in_array($type, $handlers)) {
+			$cls = getHandlerClass($type, $handlerType);
+			require_once('handlers/' . $cls . '.class.php');
+			
+			$inst = new $cls($phpDartObject);
+		} else {
+			echo 'nope';
+		}
+	}
 }
-
-DartRequest::registerHandler('TestObject', 'testObjectHandler');
-DartRequest::registerHandler('TestObject', 'moreTestObjectHandler');
-DartRequest::registerHandler('validDartObj', 'validObjectHandler');
 
 $test = new TestObject();
 $test->test1 = array('test');
@@ -37,10 +41,9 @@ $test->test4 = 'test item';
 $test->test5 = true;
 
 $dartObject = $test->toString();
-$req = new DartRequest($dartObject);
 
 $validObject = new validDartObj();
 $dartObject = $validObject->toString();
-$req = new DartRequest($dartObject);
+
 
 //echo json_encode($obj);
