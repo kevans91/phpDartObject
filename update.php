@@ -7,16 +7,7 @@ require_once('lib/IDartObject.class.php');
 require_once('lib/DartResponse.class.php');
 require_once('lib/DartRequest.class.php');
 
-class TestObject extends IDartObject {
-	var $test1 = 'array';
-	var $test2 = 'integer';
-	var $_test3 = 'double';
-	var $_test4 = 'string';
-	var $_test5 = 'boolean';
-}
-
-
-class validDartObj extends IDartObject {}
+require_once('example/objects.php');
 
 function testObjectHandler($object) {
 	var_dump(__FUNCTION__);
